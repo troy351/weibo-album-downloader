@@ -3,12 +3,18 @@ const fs = require('fs');
 const https = require('https');
 const _ = require('underscore');
 
-// login to sina weibo, open someone's page, select `album`
-// the url would be `http://weibo.com/p/${OID}/photos?from=page_100505&mod=TAB#place`
+// login to Sina Weibo, open someone's page, click `album`
+// url would be `http://weibo.com/p/${OID}/photos?from=page_100505&mod=TAB#place`
 // the ${OID} part is the OID
-const OID = null;
+const OID = '';
 
-// your cookie
+// how to get your cookie
+// 1. get into the page above when getting OID
+// 2. open DevTools (press 'F12' on Windows or 'option+command+i' on Mac, make sure you are not using old IEs)
+// 3. select 'Network' tab, in Filter choose 'XHR', then reload the page
+// 4. there will be one or more links shown in the left panel, choose one
+// 5. in the right panel `Headers` tab, you will see a parameter named 'Cookie'
+// 6. copy and paste it below as a string
 const COOKIE = '';
 
 // the image quality you want to download
@@ -190,4 +196,5 @@ if (!COOKIE) {
     console.error('please specify `COOKIE` and try again');
     return;
 }
+
 getPage(currentPage);
