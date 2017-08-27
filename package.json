@@ -1,0 +1,26 @@
+{
+  "name": "weibo-downloader",
+  "version": "1.0.0",
+  "description": "a sina weibo image downloader to download HD album from a specific user",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/troy351/weibo-image-downloader.git"
+  },
+  "keywords": [
+    "sina",
+    "weibo",
+    "image",
+    "downloader"
+  ],
+  "author": "troy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/troy351/weibo-image-downloader/issues"
+  },
+  "homepage": "https://github.com/troy351/weibo-image-downloader#readme",
+  "dependencies": {
+    "superagent": "^3.6.0",
+    "underscore": "^1.8.3"
+  }
+}

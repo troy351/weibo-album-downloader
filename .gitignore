@@ -57,3 +57,11 @@ typings/
 # dotenv environment variables file
 .env
 
+# macOS
+.DS_Store
+
+# IDEA
+/.idea
+
+# download data
+/images
