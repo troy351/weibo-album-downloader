@@ -63,7 +63,7 @@ let currentIndex = -1;
 // current downloading image count
 let downloadingCount = 0;
 
-const downloadHelper = function (newPage) {
+const downloadHelper = newPage => {
     // called by getPage
     if (newPage) {
         currentIndex = -1;
@@ -77,7 +77,7 @@ const downloadHelper = function (newPage) {
     downloadImage(imageList[currentIndex]);
 };
 
-const nextImage = function () {
+const nextImage = () => {
     downloadingCount--;
 
     if (downloadingCount === 0 && currentIndex >= imageList.length - 1) {
@@ -88,7 +88,7 @@ const nextImage = function () {
     }
 };
 
-const downloadImage = function (image, count = 0) {
+const downloadImage = (image, count = 0) => {
     if (count >= 5) {
         console.warn(`try downloading file: ${image.name} more than 5 times, skip it`);
         nextImage();
@@ -104,14 +104,14 @@ const downloadImage = function (image, count = 0) {
     } catch (e) {
         console.log(`start downloading image: ${image.name}`);
 
-        const request = http.get(image.url, function (res) {
+        const request = http.get(image.url, res => {
             let imgData = '';
 
             res.setEncoding('binary');
 
-            res.on('data', function (chunk) {
+            res.on('data', chunk => {
                 imgData += chunk;
-            }).on('end', function () {
+            }).on('end', () => {
                 try {
                     fs.writeFileSync(`./images/${UID}/${image.name}`, imgData, 'binary');
                     console.log(`download complete: ${image.name}`);
@@ -124,7 +124,7 @@ const downloadImage = function (image, count = 0) {
             });
         });
 
-        request.setTimeout(Download_Timeout, function () {
+        request.setTimeout(Download_Timeout, () => {
             // retry
             console.warn(`download timeout, start retry : ${image.name}`);
             downloadImage(image, count + 1);
@@ -132,7 +132,7 @@ const downloadImage = function (image, count = 0) {
     }
 };
 
-const getPage = function (page) {
+const getPage = page => {
     const ids = imageTotalList.slice((page - 1) * countPerPage, page * countPerPage).join(',');
 
     // download finish
