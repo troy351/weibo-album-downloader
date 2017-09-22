@@ -1,6 +1,6 @@
 {
   "name": "weibo-downloader",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "a sina weibo image downloader to download HD album from a specific user",
   "main": "index.js",
   "repository": {
