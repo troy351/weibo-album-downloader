@@ -1,15 +1,15 @@
 const superAgent = require('superagent');
 const fs = require('fs');
-const https = require('https');
+const http = require('http');
 const _ = require('underscore');
 
-// login to Sina Weibo, open someone's page, click `album`
-// url would be `http://weibo.com/p/${OID}/photos?from=page_100505&mod=TAB#place`
-// the ${OID} part is the OID
-const OID = '';
+// login to Sina Weibo, open someone's page
+// url would be `http://weibo.com/u/${UID}?topnav=1&wvr=6&topsug=1&is_all=1`
+// the ${UID} part is the UID, should be a number or a custom string
+const UID = '';
 
 // how to get your cookie
-// 1. get into the page above when getting OID
+// 1. open `http://photo.weibo.com/`
 // 2. open DevTools (press 'F12' on Windows or 'option+command+i' on Mac, make sure you are not using old IEs)
 // 3. select 'Network' tab, in Filter choose 'XHR', then reload the page
 // 4. there will be one or more links shown in the left panel, choose one
@@ -27,9 +27,6 @@ const COOKIE = '';
 // 'mw1024' stands for 1024 * x
 // 'large' stands for original image
 const Quality = 'large';
-
-// the file types you want to download
-const FILE_TYPES = ['jpg', 'png'];
 
 // max download count in the same time
 // prefer less than 10
@@ -49,31 +46,18 @@ try {
     fs.mkdirSync('./images');
 }
 
-// check if there was `images/OID` folder,
+// check if there was `images/UID` folder,
 // if not, create it
 try {
-    fs.statSync('./images/' + OID);
+    fs.statSync('./images/' + UID);
 } catch (e) {
-    fs.mkdirSync('./images/' + OID);
+    fs.mkdirSync('./images/' + UID);
 }
 
-let imageList;
-let LastMid = '';
+let imageList, imageTotalList;
 let currentPage = 1;
-const params = {
-    'ajwvr': 6,
-    'filter': 'wbphoto|||v6',
-    'page': 0,
-    'count': 20,
-    'module_id': 'profile_photo',
-    'oid': OID,
-    'uid': '',
-    'lastMid': LastMid,
-    'lang': 'zh-cn',
-    '_t': 1,
-    'callback': 'imageListLoader'
-};
-
+const countPerPage = 20;
+let saveFailedCount = 0;
 // current image index in imageList
 let currentIndex = -1;
 // current downloading image count
@@ -104,23 +88,23 @@ const nextImage = function () {
     }
 };
 
-const downloadImage = function (filename, count = 0) {
+const downloadImage = function (image, count = 0) {
     if (count >= 5) {
-        console.warn(`try downloading file: ${filename} more than 5 times, skip it`);
+        console.warn(`try downloading file: ${image.name} more than 5 times, skip it`);
         nextImage();
         return;
     }
 
     try {
         // check if image already exists
-        fs.statSync(`./images/${OID}/${filename}`);
+        fs.statSync(`./images/${UID}/${image.name}`);
 
-        console.info(`file already exists, skip image: ${filename}`);
+        console.info(`file already exists, skip image: ${image.name}`);
         nextImage();
     } catch (e) {
-        console.log(`start downloading image: ${filename}`);
+        console.log(`start downloading image: ${image.name}`);
 
-        const request = https.get(`https://wx${_.random(1, 4)}.sinaimg.cn/${Quality}/${filename}`, function (res) {
+        const request = http.get(image.url, function (res) {
             let imgData = '';
 
             res.setEncoding('binary');
@@ -129,10 +113,11 @@ const downloadImage = function (filename, count = 0) {
                 imgData += chunk;
             }).on('end', function () {
                 try {
-                    fs.writeFileSync(`./images/${OID}/${filename}`, imgData, 'binary');
-                    console.log(`download complete: ${filename}`);
+                    fs.writeFileSync(`./images/${UID}/${image.name}`, imgData, 'binary');
+                    console.log(`download complete: ${image.name}`);
                 } catch (e) {
-                    console.error(`save image failed: ${filename}`);
+                    saveFailedCount++;
+                    console.error(`save image failed: ${image.name}`);
                 } finally {
                     nextImage();
                 }
@@ -141,26 +126,25 @@ const downloadImage = function (filename, count = 0) {
 
         request.setTimeout(Download_Timeout, function () {
             // retry
-            console.warn(`download timeout, start retry : ${filename}`);
-            downloadImage(filename, count + 1);
+            console.warn(`download timeout, start retry : ${image.name}`);
+            downloadImage(image, count + 1);
         });
     }
 };
 
-const RP = new RegExp(`cmw218\/(.+?\.(${FILE_TYPES.join('|')}))`);
-const imageListLoader = function (json) {
-    LastMid = json.data.lastMid;
-    imageList = json.data.html.map(html => html.match(RP)).filter(arr => !!arr).map(arr => arr[1]);
-};
-
 const getPage = function (page) {
-    params.page = page;
-    params.lastMid = LastMid;
+    const ids = imageTotalList.slice((page - 1) * countPerPage, page * countPerPage).join(',');
+
+    // download finish
+    if (!ids) {
+        console.log(`----- download finish, save failed ${saveFailedCount} -----`);
+        return;
+    }
 
     superAgent
-        .get('http://photo.weibo.com/page/waterfall')
+        .get('http://photo.weibo.com/photos/get_multiple')
         .set('Cookie', COOKIE)
-        .query(params)
+        .query({uid: UID, ids, type: 3, __rnd: Date.now()})
         .timeout({
             response: 5000,
             deadline: 10000
@@ -172,12 +156,19 @@ const getPage = function (page) {
                 getPage(page);
             } else {
                 console.log(`----- page loaded id: ${page} -----`);
-                eval(res.text);
 
-                if (imageList.length === 0) {
-                    currentPage++;
-                    getPage(currentPage);
-                    return;
+                const data = res.body.data;
+                imageList = [];
+
+                for (let i in data) {
+                    if (data.hasOwnProperty(i)) {
+                        // handle caption ends and caption with link and enter (remove link, change enter to space)
+                        // handle multiple images with the same caption, add its pid's last 4 characters
+                        imageList.push({
+                            name: data[i].caption_render.replace(/( http:\/\/.+)? \u200b$/, '').replace(/\n/g, ' ') + '_' + data[i].pic_pid.slice(-4) + data[i].pic_name.match(/\.(.+)$/)[0],
+                            url: `${data[i].pic_host}/${Quality}/${data[i].pic_name}`
+                        });
+                    }
                 }
 
                 for (let i = 0; i < Download_Max_Count; i++) {
@@ -187,8 +178,33 @@ const getPage = function (page) {
         });
 };
 
-if (!OID) {
-    console.error('please specify an `OID` and try again');
+const getImageList = () => {
+    console.log('----- load image list -----');
+    superAgent
+        .get('http://photo.weibo.com/photos/get_photo_ids')
+        .set('Cookie', COOKIE)
+        .query({
+            uid: UID, album_id: 0, type: 3, __rnd: Date.now()
+        })
+        .timeout({
+            response: 5000,
+            deadline: 10000
+        })
+        .end((err, res) => {
+            if (err) {
+                console.error(`----- load image list failed -----`);
+                console.warn(`----- trying reload -----`);
+                getImageList();
+            } else {
+                imageTotalList = res.body.data;
+                console.error(`----- load image list complete, ${imageTotalList.length} images ready to download -----`);
+                getPage(currentPage);
+            }
+        });
+};
+
+if (!UID) {
+    console.error('please specify an `UID` and try again');
     return;
 }
 
@@ -197,4 +213,4 @@ if (!COOKIE) {
     return;
 }
 
-getPage(currentPage);
+getImageList();
