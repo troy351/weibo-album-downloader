@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/troy351/weibo-image-downloader#readme",
   "dependencies": {
-    "superagent": "^3.6.0",
-    "underscore": "^1.8.3"
+    "superagent": "^3.6.0"
   }
 }
