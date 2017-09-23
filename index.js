@@ -161,10 +161,15 @@ const getPage = page => {
 
                 for (let i in data) {
                     if (data.hasOwnProperty(i)) {
+                        // data[i] could be null sometimes
+                        if (!data[i]) {
+                            continue;
+                        }
                         // handle caption ends and caption with link and enter (remove link, change enter to space)
                         // handle multiple images with the same caption, add its pid's last 4 characters
+                        // handle file name too long, use first 50 characters
                         imageList.push({
-                            name: data[i].caption_render.replace(/( http:\/\/.+)? \u200b$/, '').replace(/\n/g, ' ') + '_' + data[i].pic_pid.slice(-4) + data[i].pic_name.match(/\.(.+)$/)[0],
+                            name: data[i].caption_render.replace(/( http:\/\/.+)? \u200b$/, '').replace(/\n/g, ' ').substr(0, 50) + '_' + data[i].pic_pid.slice(-4) + data[i].pic_name.match(/\.(.+)$/)[0],
                             url: `${data[i].pic_host}/${Quality}/${data[i].pic_name}`
                         });
                     }
@@ -196,7 +201,7 @@ const getImageList = () => {
                 getImageList();
             } else {
                 imageTotalList = res.body.data;
-                console.error(`----- load image list complete, ${imageTotalList.length} images ready to download -----`);
+                console.info(`----- load image list complete, ${imageTotalList.length} images ready to download -----`);
                 getPage(currentPage);
             }
         });
