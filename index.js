@@ -16,15 +16,16 @@ const UID = '';
 // 6. copy and paste it below as a string
 const COOKIE = '';
 
-// the image quality you want to download
-// attention: original image will be used when it's
-// low dimension and not big enough to fit the given size
+// the quality of images you want to download
 // there are 5 options
 // 'thumb150' stands for 150 * 150
 // 'thumb300' stands for 300 * 300
 // 'mw690' stands for 690 * x
 // 'mw1024' stands for 1024 * x
 // 'large' stands for original image
+
+// note: original image will be used when it's
+// low dimension and not large enough to fit the given size
 const Quality = 'large';
 
 // max download count in the same time
@@ -32,7 +33,7 @@ const Quality = 'large';
 const Download_Max_Count = 10;
 
 // if download was too slow
-// cost more than this time (milliseconds)
+// which means it costs more than this time (milliseconds)
 // will restart downloading
 const Download_Timeout = 10000;
 
@@ -57,12 +58,13 @@ let imageList, imageTotalList;
 let currentPage = 1;
 const countPerPage = 20;
 let saveFailedCount = 0;
+
 // current image index in imageList
 let currentIndex = -1;
 // current downloading image count
 let downloadingCount = 0;
 
-const downloadHelper = newPage => {
+const downloadHelper = (newPage = false) => {
     // called by getPage
     if (newPage) {
         currentIndex = -1;
@@ -165,11 +167,15 @@ const getPage = page => {
                         if (!data[i]) {
                             continue;
                         }
-                        // handle caption ends and caption with link and enter (remove link, change enter to space)
-                        // handle multiple images with the same caption, add its pid's last 4 characters
-                        // handle file name too long, use first 50 characters
+
+                        // slice(0, -2) to clear the last two '\u200'
+                        // handle caption with link, remove it
+                        // handle caption with enter, change it into space
+                        // handle caption with illegal character which can't be used in file name, remove it
+                        // handle caption too long, use first 50 characters
+                        // handle multiple images with the same caption, add last two number of photo_id
                         imageList.push({
-                            name: data[i].caption_render.replace(/( http:\/\/.+)? \u200b$/, '').replace(/\n/g, ' ').substr(0, 50) + '_' + data[i].pic_pid.slice(-4) + data[i].pic_name.match(/\.(.+)$/)[0],
+                            name: data[i].caption_render.slice(0, -2).replace(/http:\/\/.+/, '').replace(/\n/g, ' ').replace(/[\\\/:*?"<>|]/g, '').substr(0, 50) + '_' + (data[i].photo_id % 100) + data[i].pic_name.match(/\.(.+)$/)[0],
                             url: `${data[i].pic_host}/${Quality}/${data[i].pic_name}`
                         });
                     }
