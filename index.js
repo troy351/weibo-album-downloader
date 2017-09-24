@@ -153,7 +153,7 @@ const getPage = page => {
         .end((err, res) => {
             if (err) {
                 console.error(`----- page loading failed id: ${page} -----`);
-                console.warn(`----- trying reload -----`);
+                console.warn(`----- try reload -----`);
                 getPage(page);
             } else {
                 console.log(`----- page loaded id: ${page} -----`);
@@ -203,7 +203,7 @@ const getImageList = () => {
         .end((err, res) => {
             if (err) {
                 console.error(`----- load image list failed -----`);
-                console.warn(`----- trying reload -----`);
+                console.warn(`----- try reload -----`);
                 getImageList();
             } else {
                 imageTotalList = res.body.data;
