@@ -3,7 +3,7 @@ const fs = require('fs');
 const http = require('http');
 
 // login to Sina Weibo, open someone's page
-// url would be `http://weibo.com/u/${UID}?topnav=1&wvr=6&topsug=1&is_all=1`
+// url would be `http://weibo.com/${UID}?topnav=1&wvr=6&topsug=1&is_all=1`
 // the ${UID} part is the UID, should be a number or a custom string
 const UID = '';
 
