@@ -1,6 +1,6 @@
 This is a Album Downloader for [weibo.com](http://weibo.com) based on Node.js
 
-## How To Use
+## Usage
 Before we start, make sure you have `Node.js` installed in your computer, otherwise, download one at [nodejs.org](https://nodejs.org) (latest version).
 1. clone or download this repo
 1. fill `UID` and `COOKIE` in `index.js`, detailed explanation was written in the code.
